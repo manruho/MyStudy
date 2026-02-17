@@ -35,39 +35,19 @@ function isValidDateString(ymd) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return false;
   const [y, m, d] = ymd.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
-  return (
-    dt.getUTCFullYear() === y &&
-    dt.getUTCMonth() === m - 1 &&
-    dt.getUTCDate() === d
-  );
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
 }
 
-function validateStudyItem(item, file, idx, errors) {
-  const prefix = `${file} study[${idx}]`;
-  if (!isObject(item)) {
-    errors.push(`${prefix} must be an object`);
+function validateStringArray(arr, prefix, errors) {
+  if (!Array.isArray(arr)) {
+    errors.push(`${prefix} must be an array`);
     return;
   }
-  const keys = new Set(['subject', 'focus', 'detail', 'tags']);
-  for (const key of Object.keys(item)) {
-    if (!keys.has(key)) errors.push(`${prefix} has unknown field: ${key}`);
-  }
-  for (const key of ['subject', 'focus', 'detail']) {
-    if (typeof item[key] !== 'string' || item[key].trim() === '') {
-      errors.push(`${prefix}.${key} must be a non-empty string`);
+  arr.forEach((item, idx) => {
+    if (typeof item !== 'string' || item.trim() === '') {
+      errors.push(`${prefix}[${idx}] must be a non-empty string`);
     }
-  }
-  if (item.tags !== undefined) {
-    if (!Array.isArray(item.tags)) {
-      errors.push(`${prefix}.tags must be an array`);
-    } else {
-      item.tags.forEach((tag, tagIdx) => {
-        if (typeof tag !== 'string' || tag.trim() === '') {
-          errors.push(`${prefix}.tags[${tagIdx}] must be a non-empty string`);
-        }
-      });
-    }
-  }
+  });
 }
 
 function validateToshinItem(item, file, idx, errors) {
@@ -99,7 +79,7 @@ function validateRoot(data, file, errors) {
     return;
   }
 
-  const allowed = new Set(['date', 'plan', 'notes', 'toshinKoma', 'study', 'toshin']);
+  const allowed = new Set(['date', 'toshinToday', 'details', 'plan', 'notes', 'toshinKoma', 'study', 'toshin']);
   for (const key of Object.keys(data)) {
     if (!allowed.has(key)) errors.push(`${file} has unknown field: ${key}`);
   }
@@ -107,6 +87,9 @@ function validateRoot(data, file, errors) {
   if (typeof data.date !== 'string' || !isValidDateString(data.date)) {
     errors.push(`${file}.date must be a valid YYYY-MM-DD string`);
   }
+
+  if (data.toshinToday !== undefined) validateStringArray(data.toshinToday, `${file}.toshinToday`, errors);
+  if (data.details !== undefined) validateStringArray(data.details, `${file}.details`, errors);
 
   if (data.plan !== undefined && typeof data.plan !== 'string') {
     errors.push(`${file}.plan must be a string`);
@@ -118,14 +101,6 @@ function validateRoot(data, file, errors) {
 
   if (data.toshinKoma !== undefined && (!Number.isInteger(data.toshinKoma) || data.toshinKoma < 0)) {
     errors.push(`${file}.toshinKoma must be an integer >= 0`);
-  }
-
-  if (data.study !== undefined) {
-    if (!Array.isArray(data.study)) {
-      errors.push(`${file}.study must be an array`);
-    } else {
-      data.study.forEach((item, idx) => validateStudyItem(item, file, idx, errors));
-    }
   }
 
   if (data.toshin !== undefined) {
@@ -181,9 +156,7 @@ function main() {
         }
       }
       if (seenDates.has(data.date)) {
-        errors.push(
-          `Duplicate date ${data.date}: ${seenDates.get(data.date)} and ${rel}`
-        );
+        errors.push(`Duplicate date ${data.date}: ${seenDates.get(data.date)} and ${rel}`);
       } else {
         seenDates.set(data.date, rel);
       }

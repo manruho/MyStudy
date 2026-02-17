@@ -33,11 +33,7 @@ function isValidYmd(ymd) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return false;
   const { y, m, d } = parseYmd(ymd);
   const dt = new Date(Date.UTC(y, m - 1, d));
-  return (
-    dt.getUTCFullYear() === y &&
-    dt.getUTCMonth() === m - 1 &&
-    dt.getUTCDate() === d
-  );
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
 }
 
 function ymdToEpochDay(ymd) {
@@ -86,22 +82,44 @@ function jsonForScript(value) {
   return JSON.stringify(value).replace(/</g, '\\u003c');
 }
 
-function toshinKomaFromLog(log) {
-  if (Number.isInteger(log.toshinKoma) && log.toshinKoma >= 0) return log.toshinKoma;
-  if (!Array.isArray(log.toshin)) return 0;
-  return log.toshin.reduce((sum, item) => {
-    const k = Number.isInteger(item?.koma) ? item.koma : 0;
-    return sum + Math.max(0, k);
-  }, 0);
+function toStringArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((v) => typeof v === 'string')
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0);
+}
+
+function normalizeToshinToday(json) {
+  const explicit = toStringArray(json.toshinToday);
+  if (explicit.length > 0) return explicit;
+
+  if (Array.isArray(json.toshin) && json.toshin.length > 0) {
+    const subjects = json.toshin
+      .map((item) => (typeof item?.subject === 'string' ? item.subject.trim() : ''))
+      .filter((s) => s.length > 0);
+    return [...new Set(subjects)];
+  }
+
+  if (Number.isInteger(json.toshinKoma) && json.toshinKoma > 0) return ['東進'];
+  return [];
+}
+
+function normalizeDetails(json) {
+  const explicit = toStringArray(json.details);
+  if (explicit.length > 0) return explicit;
+
+  const fallback = [];
+  if (typeof json.plan === 'string' && json.plan.trim() !== '') fallback.push(json.plan.trim());
+  if (typeof json.notes === 'string' && json.notes.trim() !== '') fallback.push(json.notes.trim());
+  return fallback;
 }
 
 function normalizeLog(json) {
   return {
     date: json.date,
-    plan: typeof json.plan === 'string' ? json.plan : '',
-    notes: typeof json.notes === 'string' ? json.notes : '',
-    toshinKoma: toshinKomaFromLog(json),
-    hasStudy: Array.isArray(json.study) && json.study.length > 0
+    toshinToday: normalizeToshinToday(json),
+    details: normalizeDetails(json)
   };
 }
 
@@ -120,31 +138,26 @@ function loadLogs() {
   return logs;
 }
 
+function renderToshinBadges(items) {
+  if (!items || items.length === 0) return '<p class="empty">東進なし</p>';
+  return `<div class="subject-grid">${items.map((name) => `<span class="subject-chip">${escapeHtml(name)}</span>`).join('')}</div>`;
+}
+
 function renderDayCard(ymd, log) {
   const dt = new Date(Date.UTC(...Object.values(parseYmd(ymd)).map((n, idx) => (idx === 1 ? n - 1 : n))));
-  const wday = new Intl.DateTimeFormat('ja-JP', {
-    weekday: 'short',
-    timeZone: 'UTC'
-  }).format(dt);
-
-  const koma = log ? log.toshinKoma : 0;
-  const plan = log?.plan
-    ? `<p class="plan">${nl2brSafe(log.plan)}</p>`
-    : '<p class="empty">予定なし</p>';
+  const wday = new Intl.DateTimeFormat('ja-JP', { weekday: 'short', timeZone: 'UTC' }).format(dt);
 
   return `<article class="day-card" data-date="${ymd}">
     <button class="day-card-trigger" type="button" data-date="${ymd}" aria-controls="week-detail" aria-expanded="false">
       <h3>${ymd} (${wday})</h3>
-      <p class="koma"><strong>${koma}</strong><span>コマ</span></p>
-      ${plan}
+      <p class="label">今日やった東進</p>
+      ${renderToshinBadges(log?.toshinToday || [])}
     </button>
   </article>`;
 }
 
 function renderLayout({ title, navToday, body, basePath }) {
-  const todayLink = navToday
-    ? `<a href="${basePath}day/${navToday}/">Today</a>`
-    : '<span class="muted">Today</span>';
+  const todayLink = navToday ? `<a href="${basePath}day/${navToday}/">Today</a>` : '<span class="muted">Today</span>';
 
   return `<!doctype html>
 <html lang="ja">
@@ -172,28 +185,19 @@ function buildWeekPage(logs, logMap, todayYmd) {
   const todayEpoch = ymdToEpochDay(todayYmd);
   const weekStart = startOfWeekMonday(todayEpoch);
   const weekDates = Array.from({ length: 7 }, (_, i) => epochDayToYmd(weekStart + i));
-  const weekLogs = weekDates.map((d) => logMap.get(d) || { date: d, plan: '', notes: '', toshinKoma: 0, hasStudy: false });
+  const weekLogs = weekDates.map((d) => logMap.get(d) || { date: d, toshinToday: [], details: [] });
 
-  const totalKoma = weekLogs.reduce((sum, log) => sum + log.toshinKoma, 0);
-  const recordedDays = weekLogs.filter((log) => log.toshinKoma > 0).length;
+  const toshinDays = weekLogs.filter((log) => log.toshinToday.length > 0).length;
+  const detailCount = weekLogs.reduce((sum, log) => sum + log.details.length, 0);
   const cards = weekDates.map((d) => renderDayCard(d, logMap.get(d))).join('');
+
   const weekPayload = {
     today: todayYmd,
     logs: logs.map((log) => ({
       date: log.date,
-      toshinKoma: log.toshinKoma,
-      plan: log.plan,
-      notes: log.notes
-    })),
-    days: weekDates.map((date) => {
-      const log = logMap.get(date);
-      return {
-        date,
-        toshinKoma: log ? log.toshinKoma : 0,
-        plan: log?.plan || '',
-        notes: log?.notes || ''
-      };
-    })
+      toshinToday: log.toshinToday,
+      details: log.details
+    }))
   };
 
   return renderLayout({
@@ -204,8 +208,8 @@ function buildWeekPage(logs, logMap, todayYmd) {
 <section class="panel hero">
   <p id="week-range" class="caption">${weekDates[0]} - ${weekDates[6]} (JST)</p>
   <div class="hero-metrics">
-    <div><p>週合計</p><strong id="week-total-koma">${totalKoma} コマ</strong></div>
-    <div><p>記録日数</p><strong id="week-recorded-days">${recordedDays} / 7 日</strong></div>
+    <div><p>東進やった日</p><strong id="week-toshin-days">${toshinDays} / 7 日</strong></div>
+    <div><p>詳細メモ</p><strong id="week-detail-count">${detailCount} 件</strong></div>
   </div>
 </section>
 <section class="week-carousel">
@@ -230,8 +234,8 @@ function buildMonthPage(logs, logMap, todayYmd) {
     months: monthList,
     logs: logs.map((log) => ({
       date: log.date,
-      hasStudy: log.hasStudy,
-      hasToshin: log.toshinKoma > 0
+      hasToshin: log.toshinToday.length > 0,
+      hasDetail: log.details.length > 0
     }))
   };
 
@@ -244,7 +248,7 @@ function buildMonthPage(logs, logMap, todayYmd) {
     body: `
 <section class="panel">
   <h2>Month</h2>
-  <p class="caption">記録あり: ● / 東進コマあり: ●（赤）</p>
+  <p class="caption">東進あり: ● / 詳細あり: ●（赤）</p>
   <label for="month-select">月を選択:</label>
   <select id="month-select">${monthOptions}</select>
   <div id="calendar" class="calendar"></div>
@@ -254,10 +258,12 @@ function buildMonthPage(logs, logMap, todayYmd) {
   });
 }
 
-function buildDayPage(log, todayYmd) {
-  const plan = log.plan ? `<p>${nl2brSafe(log.plan)}</p>` : '<p class="empty">予定なし</p>';
-  const notes = log.notes ? `<p>${nl2brSafe(log.notes)}</p>` : '<p class="empty">メモなし</p>';
+function renderDetailsList(details) {
+  if (!details || details.length === 0) return '<p class="empty">詳細なし</p>';
+  return `<ul>${details.map((item) => `<li>${nl2brSafe(item)}</li>`).join('')}</ul>`;
+}
 
+function buildDayPage(log, todayYmd) {
   return renderLayout({
     title: `${log.date} | Study Record`,
     navToday: todayYmd,
@@ -265,9 +271,8 @@ function buildDayPage(log, todayYmd) {
     body: `
 <section class="panel">
   <h2>${log.date}</h2>
-  <section><h3>進めたコマ数</h3><p class="koma-inline"><strong>${log.toshinKoma}</strong><span>コマ</span></p></section>
-  <section><h3>予定</h3>${plan}</section>
-  <section><h3>メモ</h3>${notes}</section>
+  <section><h3>今日やった東進</h3>${renderToshinBadges(log.toshinToday)}</section>
+  <section><h3>詳細</h3>${renderDetailsList(log.details)}</section>
 </section>`
   });
 }

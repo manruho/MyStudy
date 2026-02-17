@@ -3,11 +3,12 @@
   const detailEl = document.getElementById('week-detail');
   const stripEl = document.getElementById('week-strip');
   const rangeEl = document.getElementById('week-range');
-  const totalEl = document.getElementById('week-total-koma');
-  const recordedEl = document.getElementById('week-recorded-days');
+  const toshinDaysEl = document.getElementById('week-toshin-days');
+  const detailCountEl = document.getElementById('week-detail-count');
   const prevBtn = document.getElementById('week-prev');
   const nextBtn = document.getElementById('week-next');
-  if (!dataEl || !detailEl || !stripEl || !rangeEl || !totalEl || !recordedEl || !prevBtn || !nextBtn) return;
+
+  if (!dataEl || !detailEl || !stripEl || !rangeEl || !toshinDaysEl || !detailCountEl || !prevBtn || !nextBtn) return;
 
   const payload = JSON.parse(dataEl.textContent);
   const byDate = new Map((payload.logs || []).map((day) => [day.date, day]));
@@ -60,16 +61,24 @@
     return new Intl.DateTimeFormat('ja-JP', { weekday: 'short', timeZone: 'UTC' }).format(dt);
   }
 
+  function renderToshinBadges(items) {
+    if (!items || items.length === 0) return '<p class="empty">東進なし</p>';
+    return `<div class="subject-grid">${items.map((name) => `<span class="subject-chip">${escapeHtml(name)}</span>`).join('')}</div>`;
+  }
+
+  function renderDetailsList(details) {
+    if (!details || details.length === 0) return '<p class="empty">詳細なし</p>';
+    return `<ul>${details.map((item) => `<li>${nl2brSafe(item)}</li>`).join('')}</ul>`;
+  }
+
   function renderCard(date, log, selected) {
-    const koma = log ? log.toshinKoma : 0;
-    const plan = log?.plan ? `<p class="plan">${nl2brSafe(log.plan)}</p>` : '<p class="empty">予定なし</p>';
     const activeClass = selected ? ' is-active' : '';
     const expanded = selected ? 'true' : 'false';
     return `<article class="day-card${activeClass}" data-date="${date}">
       <button class="day-card-trigger" type="button" data-date="${date}" aria-controls="week-detail" aria-expanded="${expanded}">
         <h3>${date} (${formatWday(date)})</h3>
-        <p class="koma"><strong>${koma}</strong><span>コマ</span></p>
-        ${plan}
+        <p class="label">今日やった東進</p>
+        ${renderToshinBadges(log?.toshinToday || [])}
       </button>
     </article>`;
   }
@@ -83,42 +92,35 @@
 
   function syncQuery() {
     const url = new URL(window.location.href);
-    if (offset === 0) {
-      url.searchParams.delete('w');
-    } else {
-      url.searchParams.set('w', String(offset));
-    }
+    if (offset === 0) url.searchParams.delete('w');
+    else url.searchParams.set('w', String(offset));
     window.history.replaceState({}, '', url);
   }
 
   function setActive(date) {
-    const day = byDate.get(date) || { date, toshinKoma: 0, plan: '', notes: '' };
-
-    const plan = day.plan ? `<p>${nl2brSafe(day.plan)}</p>` : '<p class="empty">予定なし</p>';
-    const notes = day.notes ? `<p>${nl2brSafe(day.notes)}</p>` : '<p class="empty">メモなし</p>';
+    const day = byDate.get(date) || { date, toshinToday: [], details: [] };
 
     detailEl.innerHTML = `
       <div class="detail-head">
         <h2>${escapeHtml(day.date)} の詳細</h2>
         <a href="day/${escapeHtml(day.date)}/">日別ページを開く</a>
       </div>
-      <section><h3>進めたコマ数</h3><p class="koma-inline"><strong>${day.toshinKoma}</strong><span>コマ</span></p></section>
-      <section><h3>予定</h3>${plan}</section>
-      <section><h3>メモ</h3>${notes}</section>
+      <section><h3>今日やった東進</h3>${renderToshinBadges(day.toshinToday)}</section>
+      <section><h3>今日やったこと</h3>${renderDetailsList(day.details)}</section>
     `;
     detailEl.classList.add('is-active');
   }
 
   function renderWeek() {
     const dates = weekDates(offset);
-    const logs = dates.map((d) => byDate.get(d) || { date: d, toshinKoma: 0, plan: '', notes: '' });
+    const logs = dates.map((d) => byDate.get(d) || { date: d, toshinToday: [], details: [] });
 
-    const totalKoma = logs.reduce((sum, log) => sum + log.toshinKoma, 0);
-    const recordedDays = logs.filter((log) => log.toshinKoma > 0).length;
+    const toshinDays = logs.filter((log) => (log.toshinToday || []).length > 0).length;
+    const detailCount = logs.reduce((sum, log) => sum + ((log.details || []).length), 0);
 
     rangeEl.textContent = `${dates[0]} - ${dates[6]} (JST)`;
-    totalEl.textContent = `${totalKoma} コマ`;
-    recordedEl.textContent = `${recordedDays} / 7 日`;
+    toshinDaysEl.textContent = `${toshinDays} / 7 日`;
+    detailCountEl.textContent = `${detailCount} 件`;
 
     if (!selectedDate || !dates.includes(selectedDate)) {
       selectedDate = dates.includes(payload.today) ? payload.today : dates[0];

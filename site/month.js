@@ -32,10 +32,10 @@
       const date = ymd(year, month, day);
       const log = logsByDate.get(date);
 
-      const hasStudyOrToshin = Boolean(log && (log.hasStudy || log.hasToshin));
+      const hasRecord = Boolean(log && (log.hasDetail || log.hasToshin));
       const hasToshin = Boolean(log && log.hasToshin);
 
-      const dots = hasStudyOrToshin
+      const dots = hasRecord
         ? `<span class="dot"></span>${hasToshin ? '<span class="dot toshin"></span>' : ''}`
         : '';
 
