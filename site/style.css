@@ -117,8 +117,35 @@ main {
 
 .day-card {
   min-height: 180px;
-  display: flex;
-  flex-direction: column;
+  padding: 0;
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+
+.day-card-trigger {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 1rem;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.day-card:hover {
+  border-color: #9fb7d3;
+}
+
+.day-card.is-active {
+  border-color: var(--accent);
+  background: #eef6ff;
+  transform: translateY(-1px);
+}
+
+.day-card-trigger:focus-visible {
+  outline: 2px solid #7ab4ec;
+  outline-offset: -2px;
 }
 
 .day-card h3 {
@@ -146,6 +173,28 @@ main {
 .plan {
   margin: 0;
   font-size: 0.92rem;
+}
+
+.day-detail {
+  margin-top: 0.9rem;
+}
+
+.day-detail.is-active {
+  border-color: var(--accent);
+  background: #f4f9ff;
+}
+
+.detail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.45rem;
+}
+
+.detail-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
 }
 
 .koma-inline {

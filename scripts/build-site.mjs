@@ -128,10 +128,12 @@ function renderDayCard(ymd, log) {
     ? `<p class="plan">${nl2brSafe(log.plan)}</p>`
     : '<p class="empty">予定なし</p>';
 
-  return `<article class="day-card">
-    <h3><a href="day/${ymd}/">${ymd} (${wday})</a></h3>
-    <p class="koma"><strong>${koma}</strong><span>コマ</span></p>
-    ${plan}
+  return `<article class="day-card" data-date="${ymd}">
+    <button class="day-card-trigger" type="button" data-date="${ymd}" aria-controls="week-detail" aria-expanded="false">
+      <h3>${ymd} (${wday})</h3>
+      <p class="koma"><strong>${koma}</strong><span>コマ</span></p>
+      ${plan}
+    </button>
   </article>`;
 }
 
@@ -171,6 +173,18 @@ function buildWeekPage(logMap, todayYmd) {
   const totalKoma = weekLogs.reduce((sum, log) => sum + log.toshinKoma, 0);
   const recordedDays = weekLogs.filter((log) => log.toshinKoma > 0).length;
   const cards = weekDates.map((d) => renderDayCard(d, logMap.get(d))).join('');
+  const weekPayload = {
+    today: todayYmd,
+    days: weekDates.map((date) => {
+      const log = logMap.get(date);
+      return {
+        date,
+        toshinKoma: log ? log.toshinKoma : 0,
+        plan: log?.plan || '',
+        notes: log?.notes || ''
+      };
+    })
+  };
 
   return renderLayout({
     title: 'Week | Study Record',
@@ -184,7 +198,10 @@ function buildWeekPage(logMap, todayYmd) {
     <div><p>記録日数</p><strong>${recordedDays} / 7 日</strong></div>
   </div>
 </section>
-<section class="week-strip">${cards}</section>`
+<section class="week-strip">${cards}</section>
+<section id="week-detail" class="panel day-detail" aria-live="polite"></section>
+<script id="week-data" type="application/json">${escapeHtml(JSON.stringify(weekPayload))}</script>
+<script src="assets/week.js"></script>`
   });
 }
 
@@ -249,6 +266,7 @@ function copyStaticAssets() {
   ensureDir(assetsDir);
   fs.copyFileSync(path.join(root, 'site', 'style.css'), path.join(assetsDir, 'style.css'));
   fs.copyFileSync(path.join(root, 'site', 'month.js'), path.join(assetsDir, 'month.js'));
+  fs.copyFileSync(path.join(root, 'site', 'week.js'), path.join(assetsDir, 'week.js'));
 }
 
 function build() {
