@@ -4,6 +4,29 @@ import path from 'node:path';
 const root = process.cwd();
 const logDir = path.join(root, 'content', 'logs');
 
+function listLogJsonFiles(baseDir) {
+  const out = [];
+  if (!fs.existsSync(baseDir)) return out;
+  const monthDirs = fs.readdirSync(baseDir, { withFileTypes: true });
+  for (const dirent of monthDirs) {
+    if (!dirent.isDirectory()) continue;
+    const month = dirent.name;
+    const monthPath = path.join(baseDir, month);
+    const files = fs.readdirSync(monthPath, { withFileTypes: true });
+    for (const entry of files) {
+      if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+      out.push({
+        month,
+        fileName: entry.name,
+        fullPath: path.join(monthPath, entry.name),
+        rel: path.join('content', 'logs', month, entry.name)
+      });
+    }
+  }
+  out.sort((a, b) => a.rel.localeCompare(b.rel));
+  return out;
+}
+
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -76,13 +99,17 @@ function validateRoot(data, file, errors) {
     return;
   }
 
-  const allowed = new Set(['date', 'notes', 'study', 'toshin']);
+  const allowed = new Set(['date', 'plan', 'notes', 'study', 'toshin']);
   for (const key of Object.keys(data)) {
     if (!allowed.has(key)) errors.push(`${file} has unknown field: ${key}`);
   }
 
   if (typeof data.date !== 'string' || !isValidDateString(data.date)) {
     errors.push(`${file}.date must be a valid YYYY-MM-DD string`);
+  }
+
+  if (data.plan !== undefined && typeof data.plan !== 'string') {
+    errors.push(`${file}.plan must be a string`);
   }
 
   if (data.notes !== undefined && typeof data.notes !== 'string') {
@@ -108,18 +135,18 @@ function main() {
     process.exit(1);
   }
 
-  const files = fs
-    .readdirSync(logDir)
-    .filter((name) => name.endsWith('.json'))
-    .sort();
+  const files = listLogJsonFiles(logDir);
 
   const errors = [];
   const seenDates = new Map();
 
-  for (const fileName of files) {
-    const fullPath = path.join(logDir, fileName);
-    const rel = path.join('content', 'logs', fileName);
+  for (const file of files) {
+    const { month, fileName, fullPath, rel } = file;
     const stem = path.basename(fileName, '.json');
+
+    if (!/^\d{6}$/.test(month)) {
+      errors.push(`${rel} parent folder must be YYYYMM`);
+    }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(stem)) {
       errors.push(`${rel} filename must be YYYY-MM-DD.json`);
@@ -138,6 +165,12 @@ function main() {
     if (typeof data.date === 'string') {
       if (data.date !== stem) {
         errors.push(`${rel} date mismatch: filename=${stem}, date=${data.date}`);
+      }
+      if (/^\d{6}$/.test(month)) {
+        const expectedMonth = data.date.slice(0, 7).replace('-', '');
+        if (month !== expectedMonth) {
+          errors.push(`${rel} month folder mismatch: folder=${month}, date=${data.date}`);
+        }
       }
       if (seenDates.has(data.date)) {
         errors.push(

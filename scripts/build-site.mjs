@@ -6,6 +6,24 @@ const logsDir = path.join(root, 'content', 'logs');
 const siteDir = path.join(root, '_site');
 const assetsDir = path.join(siteDir, 'assets');
 
+function listLogJsonFiles(baseDir) {
+  const out = [];
+  if (!fs.existsSync(baseDir)) return out;
+  const monthDirs = fs.readdirSync(baseDir, { withFileTypes: true });
+  for (const dirent of monthDirs) {
+    if (!dirent.isDirectory()) continue;
+    const monthPath = path.join(baseDir, dirent.name);
+    const files = fs.readdirSync(monthPath, { withFileTypes: true });
+    for (const entry of files) {
+      if (entry.isFile() && entry.name.endsWith('.json')) {
+        out.push(path.join(monthPath, entry.name));
+      }
+    }
+  }
+  out.sort((a, b) => a.localeCompare(b));
+  return out;
+}
+
 function parseYmd(ymd) {
   const [y, m, d] = ymd.split('-').map(Number);
   return { y, m, d };
@@ -74,14 +92,10 @@ function subjectClassName(subject) {
 
 function loadLogs() {
   if (!fs.existsSync(logsDir)) return [];
-  const files = fs
-    .readdirSync(logsDir)
-    .filter((name) => name.endsWith('.json'))
-    .sort();
+  const files = listLogJsonFiles(logsDir);
 
   const logs = [];
-  for (const file of files) {
-    const full = path.join(logsDir, file);
+  for (const full of files) {
     const json = JSON.parse(fs.readFileSync(full, 'utf8'));
     if (!isValidYmd(json.date)) continue;
     logs.push(json);
@@ -148,11 +162,15 @@ function renderDayCard(ymd, log) {
         .join('')}</ul>`
     : '<p class="empty">東進記録なし</p>';
 
+  const planBlock = log && log.plan
+    ? `<p>${nl2brSafe(log.plan)}</p>`
+    : '<p class="empty">予定なし</p>';
+
   const notesBlock = log && log.notes
     ? `<details><summary>メモ</summary><p>${nl2brSafe(log.notes)}</p></details>`
     : '';
 
-  return `<article class="day-card">${header}<section><h4>自学</h4>${studyBlock}</section><section><h4>東進</h4>${toshinBlock}</section>${notesBlock}</article>`;
+  return `<article class="day-card">${header}<section><h4>予定</h4>${planBlock}</section><section><h4>自学</h4>${studyBlock}</section><section><h4>東進</h4>${toshinBlock}</section>${notesBlock}</article>`;
 }
 
 function renderLayout({ title, navToday, body, basePath }) {
@@ -186,7 +204,7 @@ function buildWeekPage(logMap, todayYmd) {
   const todayEpoch = ymdToEpochDay(todayYmd);
   const weekStart = startOfWeekMonday(todayEpoch);
   const weekDates = Array.from({ length: 7 }, (_, i) => epochDayToYmd(weekStart + i));
-  const weekLogs = weekDates.map((d) => logMap.get(d) || { date: d, notes: '', study: [], toshin: [] });
+  const weekLogs = weekDates.map((d) => logMap.get(d) || { date: d, plan: '', notes: '', study: [], toshin: [] });
   const summary = aggregateWeek(weekLogs);
 
   const focusHtml = summary.topFocus.length
@@ -255,6 +273,8 @@ function buildMonthPage(logs, logMap, todayYmd) {
 }
 
 function buildDayPage(log, todayYmd) {
+  const plan = log.plan ? `<p>${nl2brSafe(log.plan)}</p>` : '<p class="empty">予定なし</p>';
+
   const study = log.study.length
     ? `<ul>${log.study
         .map((item) => `<li><strong>${escapeHtml(item.subject)} / ${escapeHtml(item.focus)}</strong><p>${nl2brSafe(item.detail)}</p></li>`)
@@ -280,6 +300,7 @@ function buildDayPage(log, todayYmd) {
     body: `
 <section class="panel">
   <h2>${log.date}</h2>
+  <section><h3>予定</h3>${plan}</section>
   <section><h3>自学</h3>${study}</section>
   <section><h3>東進</h3>${toshin}</section>
   <section><h3>メモ</h3>${notes}</section>

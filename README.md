@@ -3,14 +3,15 @@
 学習記録JSONからGitHub Pages向け静的サイトを生成するリポジトリです。
 
 ## 開発コマンド
-- `npm run validate`: `content/logs/*.json` を検証
+- `npm run validate`: `content/logs/YYYYMM/*.json` を検証
 - `npm run build`: `_site/` に静的サイト生成
 - `npm run check`: 検証 + 生成
 
 ## JSON入力先
-- `content/logs/YYYY-MM-DD.json`
+- `content/logs/YYYYMM/YYYY-MM-DD.json`（例: `content/logs/202601/2026-01-15.json`）
 - スキーマ: `schema/log.schema.json`
 - VSCode補完: `.vscode/settings.json`
+- 任意項目: `plan`（その日の予定）
 
 ## 公開ページ
 - `index.html` (Week)

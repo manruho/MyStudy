@@ -6,7 +6,7 @@
 - 学習時間・問数・ページ数などは入力必須にしない（`detail`自由記述）。
 
 ## 2. 全体構成
-- 入力: `content/logs/YYYY-MM-DD.json` をVSCodeで作成/編集。
+- 入力: `content/logs/YYYYMM/YYYY-MM-DD.json` をVSCodeで作成/編集。
 - 検証: CIでJSON形式・必須項目・日付整合性をチェック。
 - 出力: 静的サイトを `_site/` に生成し、GitHub Pagesへ自動デプロイ。
 
@@ -17,11 +17,12 @@
 ## 4. データ仕様
 
 ### 4.1 ファイル単位
-- 1日1ファイル: `content/logs/YYYY-MM-DD.json`
-- 例: `content/logs/2026-02-17.json`
+- 1日1ファイル: `content/logs/YYYYMM/YYYY-MM-DD.json`
+- 例: `content/logs/202602/2026-02-17.json`
 
 ### 4.2 ルート項目
 - `date` 必須: `YYYY-MM-DD`。ファイル名と一致必須。
+- `plan` 任意: その日の予定。
 - `notes` 任意: その日の自由メモ。
 - `study` 必須: 自学配列（空配列可）。
 - `toshin` 必須: 東進配列（空配列可）。
