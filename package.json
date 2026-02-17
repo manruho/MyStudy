@@ -1,0 +1,11 @@
+{
+  "name": "study-record",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate-logs.mjs",
+    "build": "node scripts/build-site.mjs",
+    "check": "npm run validate && npm run build"
+  }
+}
