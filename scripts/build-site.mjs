@@ -82,6 +82,10 @@ function nl2brSafe(input) {
   return escapeHtml(input).replace(/\n/g, '<br>');
 }
 
+function jsonForScript(value) {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
 function toshinKomaFromLog(log) {
   if (Number.isInteger(log.toshinKoma) && log.toshinKoma >= 0) return log.toshinKoma;
   if (!Array.isArray(log.toshin)) return 0;
@@ -200,7 +204,7 @@ function buildWeekPage(logMap, todayYmd) {
 </section>
 <section class="week-strip">${cards}</section>
 <section id="week-detail" class="panel day-detail" aria-live="polite"></section>
-<script id="week-data" type="application/json">${escapeHtml(JSON.stringify(weekPayload))}</script>
+<script id="week-data" type="application/json">${jsonForScript(weekPayload)}</script>
 <script src="assets/week.js"></script>`
   });
 }
@@ -235,7 +239,7 @@ function buildMonthPage(logs, logMap, todayYmd) {
   <select id="month-select">${monthOptions}</select>
   <div id="calendar" class="calendar"></div>
 </section>
-<script id="month-data" type="application/json">${escapeHtml(JSON.stringify(payload))}</script>
+<script id="month-data" type="application/json">${jsonForScript(payload)}</script>
 <script src="assets/month.js"></script>`
   });
 }
