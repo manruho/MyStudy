@@ -155,5 +155,13 @@
     renderWeek();
   });
 
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'ArrowLeft') {
+      prevBtn.click();
+    } else if (event.key === 'ArrowRight') {
+      if (!nextBtn.disabled) nextBtn.click();
+    }
+  });
+
   renderWeek();
 })();
