@@ -4,7 +4,7 @@
   "title": "Study Log",
   "type": "object",
   "additionalProperties": false,
-  "required": ["date", "study", "toshin"],
+  "required": ["date"],
   "properties": {
     "date": {
       "type": "string",
@@ -15,6 +15,10 @@
     },
     "notes": {
       "type": "string"
+    },
+    "toshinKoma": {
+      "type": "integer",
+      "minimum": 0
     },
     "study": {
       "type": "array",

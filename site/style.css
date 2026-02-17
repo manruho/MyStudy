@@ -1,14 +1,13 @@
 :root {
-  --bg: #f8f7f1;
+  --bg: #f6f8fb;
+  --bg-accent: #e8eef7;
   --panel: #ffffff;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --line: #d1d5db;
-  --accent: #0f766e;
-  --toshin: #b91c1c;
-  --math: #1d4ed8;
-  --english: #c2410c;
-  --japanese: #7c3aed;
+  --text: #17212b;
+  --muted: #65758a;
+  --line: #d8e1ec;
+  --accent: #0b6bcb;
+  --danger: #c62828;
+  --shadow: 0 8px 24px rgba(16, 36, 59, 0.08);
 }
 
 * {
@@ -18,32 +17,32 @@
 body {
   margin: 0;
   padding: 0 1rem 2rem;
-  background: radial-gradient(circle at top, #fef3c7 0%, var(--bg) 45%);
+  background: linear-gradient(180deg, var(--bg-accent) 0%, var(--bg) 220px, var(--bg) 100%);
   color: var(--text);
   font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .site-header {
-  max-width: 1120px;
+  max-width: 1360px;
   margin: 0 auto;
   padding: 1rem 0;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .site-header h1 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
 }
 
 nav {
   display: flex;
-  gap: 0.75rem;
   align-items: center;
+  gap: 0.8rem;
 }
 
 a {
@@ -56,7 +55,7 @@ a:hover {
 }
 
 main {
-  max-width: 1120px;
+  max-width: 1360px;
   margin: 0 auto;
 }
 
@@ -64,8 +63,43 @@ main {
 .day-card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 0.75rem;
+  border-radius: 14px;
   padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.hero .caption {
+  margin: 0;
+}
+
+.hero-metrics {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.hero-metrics div {
+  min-width: 180px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  background: #f9fbff;
+}
+
+.hero-metrics p,
+.hero-metrics strong {
+  margin: 0;
+}
+
+.hero-metrics strong {
+  font-size: 1.15rem;
 }
 
 .caption,
@@ -74,73 +108,61 @@ main {
   color: var(--muted);
 }
 
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 0.75rem;
-  margin: 0.75rem 0;
-}
-
-.summary-grid div {
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  padding: 0.6rem;
-}
-
-.summary-grid h3,
-.summary-grid p,
-.day-card h3,
-.day-card h4 {
-  margin: 0;
-}
-
-.week-grid {
+.week-strip {
   margin-top: 1rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.7rem;
 }
 
-.day-card section {
-  margin-top: 0.7rem;
+.day-card {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
 }
 
-.day-card ul,
-.panel ul,
-.panel ol {
-  margin: 0.35rem 0 0;
-  padding-left: 1.1rem;
+.day-card h3 {
+  margin: 0;
+  font-size: 0.95rem;
 }
 
-.day-card p,
+.koma {
+  margin: 0.7rem 0 0.45rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.koma strong {
+  font-size: 1.85rem;
+  line-height: 1;
+}
+
+.koma span,
+.koma-inline span {
+  color: var(--muted);
+}
+
+.plan {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.koma-inline {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.koma-inline strong {
+  font-size: 1.6rem;
+}
+
+.panel h2,
+.panel h3,
 .panel p {
-  margin: 0.35rem 0 0;
-}
-
-.toshin-item {
-  border-left: 4px solid var(--toshin);
-  background: #fef2f2;
-  padding: 0.45rem 0.55rem;
-  margin: 0.45rem 0;
-  border-radius: 0.4rem;
-  list-style: none;
-}
-
-.subject-数学 {
-  border-left-color: var(--math);
-}
-
-.subject-英語 {
-  border-left-color: var(--english);
-}
-
-.subject-国語 {
-  border-left-color: var(--japanese);
-}
-
-.toshin-list {
-  padding: 0;
-  margin: 0.4rem 0 0;
+  margin-top: 0;
 }
 
 .calendar {
@@ -155,7 +177,7 @@ main {
   min-height: 88px;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 0.5rem;
+  border-radius: 10px;
   padding: 0.35rem;
 }
 
@@ -184,7 +206,7 @@ main {
 }
 
 .dot.toshin {
-  background: var(--toshin);
+  background: var(--danger);
 }
 
 .cell a {
@@ -192,7 +214,28 @@ main {
   height: 100%;
 }
 
+@media (max-width: 1100px) {
+  .week-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
+  body {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .hero-metrics {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .week-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .calendar {
     gap: 0.2rem;
   }

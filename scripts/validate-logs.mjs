@@ -99,7 +99,7 @@ function validateRoot(data, file, errors) {
     return;
   }
 
-  const allowed = new Set(['date', 'plan', 'notes', 'study', 'toshin']);
+  const allowed = new Set(['date', 'plan', 'notes', 'toshinKoma', 'study', 'toshin']);
   for (const key of Object.keys(data)) {
     if (!allowed.has(key)) errors.push(`${file} has unknown field: ${key}`);
   }
@@ -116,16 +116,24 @@ function validateRoot(data, file, errors) {
     errors.push(`${file}.notes must be a string`);
   }
 
-  if (!Array.isArray(data.study)) {
-    errors.push(`${file}.study must be an array`);
-  } else {
-    data.study.forEach((item, idx) => validateStudyItem(item, file, idx, errors));
+  if (data.toshinKoma !== undefined && (!Number.isInteger(data.toshinKoma) || data.toshinKoma < 0)) {
+    errors.push(`${file}.toshinKoma must be an integer >= 0`);
   }
 
-  if (!Array.isArray(data.toshin)) {
-    errors.push(`${file}.toshin must be an array`);
-  } else {
-    data.toshin.forEach((item, idx) => validateToshinItem(item, file, idx, errors));
+  if (data.study !== undefined) {
+    if (!Array.isArray(data.study)) {
+      errors.push(`${file}.study must be an array`);
+    } else {
+      data.study.forEach((item, idx) => validateStudyItem(item, file, idx, errors));
+    }
+  }
+
+  if (data.toshin !== undefined) {
+    if (!Array.isArray(data.toshin)) {
+      errors.push(`${file}.toshin must be an array`);
+    } else {
+      data.toshin.forEach((item, idx) => validateToshinItem(item, file, idx, errors));
+    }
   }
 }
 

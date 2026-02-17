@@ -11,7 +11,9 @@
 - `content/logs/YYYYMM/YYYY-MM-DD.json`（例: `content/logs/202601/2026-01-15.json`）
 - スキーマ: `schema/log.schema.json`
 - VSCode補完: `.vscode/settings.json`
-- 任意項目: `plan`（その日の予定）
+- 推奨最小項目: `date`, `toshinKoma`
+- 任意項目: `plan`, `notes`
+- 互換項目: 旧 `study[]`, `toshin[]` も読み取り可能
 
 ## 公開ページ
 - `index.html` (Week)

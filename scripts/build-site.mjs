@@ -82,12 +82,23 @@ function nl2brSafe(input) {
   return escapeHtml(input).replace(/\n/g, '<br>');
 }
 
-function subjectClassName(subject) {
-  const normalized = subject
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, '-');
-  return `subject-${normalized || 'other'}`;
+function toshinKomaFromLog(log) {
+  if (Number.isInteger(log.toshinKoma) && log.toshinKoma >= 0) return log.toshinKoma;
+  if (!Array.isArray(log.toshin)) return 0;
+  return log.toshin.reduce((sum, item) => {
+    const k = Number.isInteger(item?.koma) ? item.koma : 0;
+    return sum + Math.max(0, k);
+  }, 0);
+}
+
+function normalizeLog(json) {
+  return {
+    date: json.date,
+    plan: typeof json.plan === 'string' ? json.plan : '',
+    notes: typeof json.notes === 'string' ? json.notes : '',
+    toshinKoma: toshinKomaFromLog(json),
+    hasStudy: Array.isArray(json.study) && json.study.length > 0
+  };
 }
 
 function loadLogs() {
@@ -98,40 +109,11 @@ function loadLogs() {
   for (const full of files) {
     const json = JSON.parse(fs.readFileSync(full, 'utf8'));
     if (!isValidYmd(json.date)) continue;
-    logs.push(json);
+    logs.push(normalizeLog(json));
   }
 
   logs.sort((a, b) => a.date.localeCompare(b.date));
   return logs;
-}
-
-function aggregateWeek(weekLogs) {
-  const recordDays = weekLogs.filter((log) => log.study.length > 0 || log.toshin.length > 0).length;
-  const studyDays = weekLogs.filter((log) => log.study.length > 0).length;
-  const toshinDays = weekLogs.filter((log) => log.toshin.length > 0).length;
-
-  const focusCounts = new Map();
-  const toshinBySubject = new Map();
-
-  for (const log of weekLogs) {
-    for (const item of log.study) {
-      const key = item.focus.trim();
-      focusCounts.set(key, (focusCounts.get(key) || 0) + 1);
-    }
-    for (const item of log.toshin) {
-      const key = item.subject.trim();
-      toshinBySubject.set(key, (toshinBySubject.get(key) || 0) + item.koma);
-    }
-  }
-
-  const topFocus = [...focusCounts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'))
-    .slice(0, 5);
-
-  const toshinSummary = [...toshinBySubject.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'));
-
-  return { recordDays, studyDays, toshinDays, topFocus, toshinSummary };
 }
 
 function renderDayCard(ymd, log) {
@@ -141,36 +123,16 @@ function renderDayCard(ymd, log) {
     timeZone: 'UTC'
   }).format(dt);
 
-  const header = `<h3><a href="day/${ymd}/">${ymd} (${wday})</a></h3>`;
-
-  const studyBlock = log && log.study.length > 0
-    ? `<ul>${log.study
-        .map(
-          (item) =>
-            `<li><strong>${escapeHtml(item.subject)} / ${escapeHtml(item.focus)}</strong><p>${nl2brSafe(item.detail)}</p></li>`
-        )
-        .join('')}</ul>`
-    : '<p class="empty">自学記録なし</p>';
-
-  const toshinBlock = log && log.toshin.length > 0
-    ? `<ul class="toshin-list">${log.toshin
-        .map((item) => {
-          const klass = subjectClassName(item.subject);
-          const memo = item.memo ? `<p>${nl2brSafe(item.memo)}</p>` : '';
-          return `<li class="toshin-item ${klass}"><strong>${escapeHtml(item.subject)} / ${escapeHtml(item.course)} / ${item.koma}コマ</strong>${memo}</li>`;
-        })
-        .join('')}</ul>`
-    : '<p class="empty">東進記録なし</p>';
-
-  const planBlock = log && log.plan
-    ? `<p>${nl2brSafe(log.plan)}</p>`
+  const koma = log ? log.toshinKoma : 0;
+  const plan = log?.plan
+    ? `<p class="plan">${nl2brSafe(log.plan)}</p>`
     : '<p class="empty">予定なし</p>';
 
-  const notesBlock = log && log.notes
-    ? `<details><summary>メモ</summary><p>${nl2brSafe(log.notes)}</p></details>`
-    : '';
-
-  return `<article class="day-card">${header}<section><h4>予定</h4>${planBlock}</section><section><h4>自学</h4>${studyBlock}</section><section><h4>東進</h4>${toshinBlock}</section>${notesBlock}</article>`;
+  return `<article class="day-card">
+    <h3><a href="day/${ymd}/">${ymd} (${wday})</a></h3>
+    <p class="koma"><strong>${koma}</strong><span>コマ</span></p>
+    ${plan}
+  </article>`;
 }
 
 function renderLayout({ title, navToday, body, basePath }) {
@@ -188,7 +150,7 @@ function renderLayout({ title, navToday, body, basePath }) {
 </head>
 <body>
   <header class="site-header">
-    <h1>学習記録サイト</h1>
+    <h1>Study Record</h1>
     <nav>
       <a href="${basePath}index.html">Week</a>
       <a href="${basePath}month.html">Month</a>
@@ -204,36 +166,25 @@ function buildWeekPage(logMap, todayYmd) {
   const todayEpoch = ymdToEpochDay(todayYmd);
   const weekStart = startOfWeekMonday(todayEpoch);
   const weekDates = Array.from({ length: 7 }, (_, i) => epochDayToYmd(weekStart + i));
-  const weekLogs = weekDates.map((d) => logMap.get(d) || { date: d, plan: '', notes: '', study: [], toshin: [] });
-  const summary = aggregateWeek(weekLogs);
+  const weekLogs = weekDates.map((d) => logMap.get(d) || { date: d, plan: '', notes: '', toshinKoma: 0, hasStudy: false });
 
-  const focusHtml = summary.topFocus.length
-    ? `<ol>${summary.topFocus.map(([focus, count]) => `<li>${escapeHtml(focus)} (${count})</li>`).join('')}</ol>`
-    : '<p class="empty">なし</p>';
-
-  const toshinHtml = summary.toshinSummary.length
-    ? `<ul>${summary.toshinSummary.map(([subject, koma]) => `<li>${escapeHtml(subject)}: ${koma}コマ</li>`).join('')}</ul>`
-    : '<p class="empty">なし</p>';
-
+  const totalKoma = weekLogs.reduce((sum, log) => sum + log.toshinKoma, 0);
+  const recordedDays = weekLogs.filter((log) => log.toshinKoma > 0).length;
   const cards = weekDates.map((d) => renderDayCard(d, logMap.get(d))).join('');
 
   return renderLayout({
-    title: 'Week | 学習記録サイト',
+    title: 'Week | Study Record',
     navToday: logMap.has(todayYmd) ? todayYmd : null,
     basePath: '',
     body: `
-<section class="panel">
-  <h2>今週（JST / 月曜開始）</h2>
-  <p class="caption">対象週: ${weekDates[0]} 〜 ${weekDates[6]}</p>
-  <div class="summary-grid">
-    <div><h3>記録あり</h3><p>${summary.recordDays} / 7 日</p></div>
-    <div><h3>自学あり</h3><p>${summary.studyDays} 日</p></div>
-    <div><h3>東進あり</h3><p>${summary.toshinDays} 日</p></div>
+<section class="panel hero">
+  <p class="caption">${weekDates[0]} - ${weekDates[6]} (JST)</p>
+  <div class="hero-metrics">
+    <div><p>今週合計</p><strong>${totalKoma} コマ</strong></div>
+    <div><p>記録日数</p><strong>${recordedDays} / 7 日</strong></div>
   </div>
-  <section><h3>強化頻度 Top5</h3>${focusHtml}</section>
-  <section><h3>東進 科目別コマ数</h3>${toshinHtml}</section>
 </section>
-<section class="week-grid">${cards}</section>`
+<section class="week-strip">${cards}</section>`
   });
 }
 
@@ -248,21 +199,21 @@ function buildMonthPage(logs, logMap, todayYmd) {
     months: monthList,
     logs: logs.map((log) => ({
       date: log.date,
-      hasStudy: log.study.length > 0,
-      hasToshin: log.toshin.length > 0
+      hasStudy: log.hasStudy,
+      hasToshin: log.toshinKoma > 0
     }))
   };
 
   const monthOptions = monthList.map((m) => `<option value="${m}">${m}</option>`).join('');
 
   return renderLayout({
-    title: 'Month | 学習記録サイト',
+    title: 'Month | Study Record',
     navToday: logMap.has(todayYmd) ? todayYmd : null,
     basePath: '',
     body: `
 <section class="panel">
-  <h2>Month カレンダー</h2>
-  <p class="caption">記録あり: ● / 東進あり: ●（赤）</p>
+  <h2>Month</h2>
+  <p class="caption">記録あり: ● / 東進コマあり: ●（赤）</p>
   <label for="month-select">月を選択:</label>
   <select id="month-select">${monthOptions}</select>
   <div id="calendar" class="calendar"></div>
@@ -274,35 +225,17 @@ function buildMonthPage(logs, logMap, todayYmd) {
 
 function buildDayPage(log, todayYmd) {
   const plan = log.plan ? `<p>${nl2brSafe(log.plan)}</p>` : '<p class="empty">予定なし</p>';
-
-  const study = log.study.length
-    ? `<ul>${log.study
-        .map((item) => `<li><strong>${escapeHtml(item.subject)} / ${escapeHtml(item.focus)}</strong><p>${nl2brSafe(item.detail)}</p></li>`)
-        .join('')}</ul>`
-    : '<p class="empty">自学記録なし</p>';
-
-  const toshin = log.toshin.length
-    ? `<ul class="toshin-list">${log.toshin
-        .map((item) => {
-          const memo = item.memo ? `<p>${nl2brSafe(item.memo)}</p>` : '';
-          const klass = subjectClassName(item.subject);
-          return `<li class="toshin-item ${klass}"><strong>${escapeHtml(item.subject)} / ${escapeHtml(item.course)} / ${item.koma}コマ</strong>${memo}</li>`;
-        })
-        .join('')}</ul>`
-    : '<p class="empty">東進記録なし</p>';
-
   const notes = log.notes ? `<p>${nl2brSafe(log.notes)}</p>` : '<p class="empty">メモなし</p>';
 
   return renderLayout({
-    title: `${log.date} | 学習記録サイト`,
+    title: `${log.date} | Study Record`,
     navToday: todayYmd,
     basePath: '../../',
     body: `
 <section class="panel">
   <h2>${log.date}</h2>
+  <section><h3>進めたコマ数</h3><p class="koma-inline"><strong>${log.toshinKoma}</strong><span>コマ</span></p></section>
   <section><h3>予定</h3>${plan}</section>
-  <section><h3>自学</h3>${study}</section>
-  <section><h3>東進</h3>${toshin}</section>
   <section><h3>メモ</h3>${notes}</section>
 </section>`
   });
@@ -340,7 +273,7 @@ function build() {
   fs.writeFileSync(
     path.join(siteDir, '404.html'),
     renderLayout({
-      title: 'Not Found | 学習記録サイト',
+      title: 'Not Found | Study Record',
       navToday: logMap.has(todayYmd) ? todayYmd : null,
       basePath: '',
       body: '<section class="panel"><h2>ページが見つかりません</h2><p><a href="index.html">トップへ戻る</a></p></section>'
