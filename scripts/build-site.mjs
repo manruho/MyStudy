@@ -168,7 +168,7 @@ function renderLayout({ title, navToday, body, basePath }) {
 </html>`;
 }
 
-function buildWeekPage(logMap, todayYmd) {
+function buildWeekPage(logs, logMap, todayYmd) {
   const todayEpoch = ymdToEpochDay(todayYmd);
   const weekStart = startOfWeekMonday(todayEpoch);
   const weekDates = Array.from({ length: 7 }, (_, i) => epochDayToYmd(weekStart + i));
@@ -179,6 +179,12 @@ function buildWeekPage(logMap, todayYmd) {
   const cards = weekDates.map((d) => renderDayCard(d, logMap.get(d))).join('');
   const weekPayload = {
     today: todayYmd,
+    logs: logs.map((log) => ({
+      date: log.date,
+      toshinKoma: log.toshinKoma,
+      plan: log.plan,
+      notes: log.notes
+    })),
     days: weekDates.map((date) => {
       const log = logMap.get(date);
       return {
@@ -196,13 +202,17 @@ function buildWeekPage(logMap, todayYmd) {
     basePath: '',
     body: `
 <section class="panel hero">
-  <p class="caption">${weekDates[0]} - ${weekDates[6]} (JST)</p>
+  <div class="week-head">
+    <button id="week-prev" class="week-nav-btn" type="button" aria-label="先週を見る">←</button>
+    <p id="week-range" class="caption">${weekDates[0]} - ${weekDates[6]} (JST)</p>
+    <button id="week-next" class="week-nav-btn" type="button" aria-label="新しい週を見る">→</button>
+  </div>
   <div class="hero-metrics">
-    <div><p>今週合計</p><strong>${totalKoma} コマ</strong></div>
-    <div><p>記録日数</p><strong>${recordedDays} / 7 日</strong></div>
+    <div><p>週合計</p><strong id="week-total-koma">${totalKoma} コマ</strong></div>
+    <div><p>記録日数</p><strong id="week-recorded-days">${recordedDays} / 7 日</strong></div>
   </div>
 </section>
-<section class="week-strip">${cards}</section>
+<section id="week-strip" class="week-strip">${cards}</section>
 <section id="week-detail" class="panel day-detail" aria-live="polite"></section>
 <script id="week-data" type="application/json">${jsonForScript(weekPayload)}</script>
 <script src="assets/week.js"></script>`
@@ -283,7 +293,7 @@ function build() {
 
   copyStaticAssets();
 
-  fs.writeFileSync(path.join(siteDir, 'index.html'), buildWeekPage(logMap, todayYmd));
+  fs.writeFileSync(path.join(siteDir, 'index.html'), buildWeekPage(logs, logMap, todayYmd));
   fs.writeFileSync(path.join(siteDir, 'month.html'), buildMonthPage(logs, logMap, todayYmd));
 
   for (const log of logs) {
