@@ -92,12 +92,6 @@ nav a:hover {
   animation: rise 420ms ease both;
 }
 
-.week-head {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-
 .week-nav-btn {
   width: 2rem;
   height: 2rem;
@@ -120,6 +114,27 @@ nav a:hover {
 .week-nav-btn:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.week-carousel {
+  position: relative;
+  margin-top: 0.95rem;
+}
+
+.week-nav-btn-left,
+.week-nav-btn-right {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  transform: translateY(-50%);
+}
+
+.week-nav-btn-left {
+  left: -1rem;
+}
+
+.week-nav-btn-right {
+  right: -1rem;
 }
 
 .hero .caption {
@@ -164,7 +179,6 @@ nav a:hover {
 }
 
 .week-strip {
-  margin-top: 0.95rem;
   display: grid;
   gap: 0.72rem;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -370,6 +384,14 @@ nav a:hover {
 
   .week-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .week-nav-btn-left {
+    left: -0.3rem;
+  }
+
+  .week-nav-btn-right {
+    right: -0.3rem;
   }
 
   .day-card {

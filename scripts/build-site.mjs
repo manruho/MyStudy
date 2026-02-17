@@ -202,17 +202,17 @@ function buildWeekPage(logs, logMap, todayYmd) {
     basePath: '',
     body: `
 <section class="panel hero">
-  <div class="week-head">
-    <button id="week-prev" class="week-nav-btn" type="button" aria-label="先週を見る">←</button>
-    <p id="week-range" class="caption">${weekDates[0]} - ${weekDates[6]} (JST)</p>
-    <button id="week-next" class="week-nav-btn" type="button" aria-label="新しい週を見る">→</button>
-  </div>
+  <p id="week-range" class="caption">${weekDates[0]} - ${weekDates[6]} (JST)</p>
   <div class="hero-metrics">
     <div><p>週合計</p><strong id="week-total-koma">${totalKoma} コマ</strong></div>
     <div><p>記録日数</p><strong id="week-recorded-days">${recordedDays} / 7 日</strong></div>
   </div>
 </section>
-<section id="week-strip" class="week-strip">${cards}</section>
+<section class="week-carousel">
+  <button id="week-prev" class="week-nav-btn week-nav-btn-left" type="button" aria-label="先週を見る">←</button>
+  <section id="week-strip" class="week-strip">${cards}</section>
+  <button id="week-next" class="week-nav-btn week-nav-btn-right" type="button" aria-label="新しい週を見る">→</button>
+</section>
 <section id="week-detail" class="panel day-detail" aria-live="polite"></section>
 <script id="week-data" type="application/json">${jsonForScript(weekPayload)}</script>
 <script src="assets/week.js"></script>`
