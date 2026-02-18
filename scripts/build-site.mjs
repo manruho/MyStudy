@@ -65,6 +65,16 @@ function startOfWeekMonday(epochDay) {
   return epochDay - mondayBasedDow;
 }
 
+function countConsecutiveLogDays(logMap, todayYmd) {
+  let streak = 0;
+  let cursor = ymdToEpochDay(todayYmd);
+  while (logMap.has(epochDayToYmd(cursor))) {
+    streak += 1;
+    cursor -= 1;
+  }
+  return streak;
+}
+
 function escapeHtml(input) {
   return String(input)
     .replaceAll('&', '&amp;')
@@ -169,7 +179,7 @@ function renderLayout({ title, navToday, body, basePath }) {
 </head>
 <body>
   <header class="site-header">
-    <h1>Study Record</h1>
+    <h1>ぼくのおべんきょーしぇあさいと</h1>
     <nav>
       <a href="${basePath}index.html">Week</a>
       <a href="${basePath}month.html">Month</a>
@@ -188,7 +198,7 @@ function buildWeekPage(logs, logMap, todayYmd) {
   const weekLogs = weekDates.map((d) => logMap.get(d) || { date: d, toshinToday: [], details: [] });
 
   const toshinDays = weekLogs.filter((log) => log.toshinToday.length > 0).length;
-  const detailCount = weekLogs.reduce((sum, log) => sum + log.details.length, 0);
+  const streakDays = countConsecutiveLogDays(logMap, todayYmd);
   const cards = weekDates.map((d) => renderDayCard(d, logMap.get(d))).join('');
 
   const weekPayload = {
@@ -201,7 +211,7 @@ function buildWeekPage(logs, logMap, todayYmd) {
   };
 
   return renderLayout({
-    title: 'Week | Study Record',
+    title: 'Week | ぼくのおべんきょーしぇあさいと',
     navToday: logMap.has(todayYmd) ? todayYmd : null,
     basePath: '',
     body: `
@@ -209,7 +219,7 @@ function buildWeekPage(logs, logMap, todayYmd) {
   <p id="week-range" class="caption">${weekDates[0]} - ${weekDates[6]} (JST)</p>
   <div class="hero-metrics">
     <div><p>東進やった日</p><strong id="week-toshin-days">${toshinDays} / 7 日</strong></div>
-    <div><p>詳細メモ</p><strong id="week-detail-count">${detailCount} 件</strong></div>
+    <div><p>連続勉強時間</p><strong id="week-study-streak">${streakDays}日目</strong></div>
   </div>
 </section>
 <section class="week-carousel">
@@ -242,7 +252,7 @@ function buildMonthPage(logs, logMap, todayYmd) {
   const monthOptions = monthList.map((m) => `<option value="${m}">${m}</option>`).join('');
 
   return renderLayout({
-    title: 'Month | Study Record',
+    title: 'Month | ぼくのおべんきょーしぇあさいと',
     navToday: logMap.has(todayYmd) ? todayYmd : null,
     basePath: '',
     body: `
@@ -265,7 +275,7 @@ function renderDetailsList(details) {
 
 function buildDayPage(log, todayYmd) {
   return renderLayout({
-    title: `${log.date} | Study Record`,
+    title: `${log.date} | ぼくのおべんきょーしぇあさいと`,
     navToday: todayYmd,
     basePath: '../../',
     body: `
@@ -310,7 +320,7 @@ function build() {
   fs.writeFileSync(
     path.join(siteDir, '404.html'),
     renderLayout({
-      title: 'Not Found | Study Record',
+      title: 'Not Found | ぼくのおべんきょーしぇあさいと',
       navToday: logMap.has(todayYmd) ? todayYmd : null,
       basePath: '',
       body: '<section class="panel"><h2>ページが見つかりません</h2><p><a href="index.html">トップへ戻る</a></p></section>'

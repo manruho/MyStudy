@@ -4,11 +4,11 @@
   const stripEl = document.getElementById('week-strip');
   const rangeEl = document.getElementById('week-range');
   const toshinDaysEl = document.getElementById('week-toshin-days');
-  const detailCountEl = document.getElementById('week-detail-count');
+  const studyStreakEl = document.getElementById('week-study-streak');
   const prevBtn = document.getElementById('week-prev');
   const nextBtn = document.getElementById('week-next');
 
-  if (!dataEl || !detailEl || !stripEl || !rangeEl || !toshinDaysEl || !detailCountEl || !prevBtn || !nextBtn) return;
+  if (!dataEl || !detailEl || !stripEl || !rangeEl || !toshinDaysEl || !studyStreakEl || !prevBtn || !nextBtn) return;
 
   const payload = JSON.parse(dataEl.textContent);
   const byDate = new Map((payload.logs || []).map((day) => [day.date, day]));
@@ -55,6 +55,16 @@
     return Array.from({ length: 7 }, (_, i) => epochDayToYmd(start + i));
   }
 
+  function countConsecutiveDaysUntilToday() {
+    let streak = 0;
+    let cursor = ymdToEpochDay(payload.today);
+    while (byDate.has(epochDayToYmd(cursor))) {
+      streak += 1;
+      cursor -= 1;
+    }
+    return streak;
+  }
+
   function formatWday(ymd) {
     const { y, m, d } = parseYmd(ymd);
     const dt = new Date(Date.UTC(y, m - 1, d));
@@ -85,6 +95,7 @@
 
   let offset = 0;
   let selectedDate = null;
+  let hasInitialFocus = false;
 
   const search = new URLSearchParams(window.location.search);
   const q = Number.parseInt(search.get('w') || '0', 10);
@@ -116,17 +127,25 @@
     const logs = dates.map((d) => byDate.get(d) || { date: d, toshinToday: [], details: [] });
 
     const toshinDays = logs.filter((log) => (log.toshinToday || []).length > 0).length;
-    const detailCount = logs.reduce((sum, log) => sum + ((log.details || []).length), 0);
+    const streakDays = countConsecutiveDaysUntilToday();
 
     rangeEl.textContent = `${dates[0]} - ${dates[6]} (JST)`;
     toshinDaysEl.textContent = `${toshinDays} / 7 日`;
-    detailCountEl.textContent = `${detailCount} 件`;
+    studyStreakEl.textContent = `${streakDays}日目`;
 
     if (!selectedDate || !dates.includes(selectedDate)) {
       selectedDate = dates.includes(payload.today) ? payload.today : dates[0];
     }
 
     stripEl.innerHTML = dates.map((date) => renderCard(date, byDate.get(date), selectedDate === date)).join('');
+
+    if (!hasInitialFocus) {
+      const focusDate = dates.includes(payload.today) ? payload.today : selectedDate;
+      const initialTrigger = stripEl.querySelector(`.day-card-trigger[data-date="${focusDate}"]`);
+      if (initialTrigger) initialTrigger.focus({ preventScroll: true });
+      hasInitialFocus = true;
+    }
+
     setActive(selectedDate);
 
     nextBtn.disabled = offset === 0;
