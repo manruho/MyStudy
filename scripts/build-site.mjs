@@ -279,10 +279,19 @@ function buildDayPage(log, todayYmd) {
     navToday: todayYmd,
     basePath: '../../',
     body: `
-<section class="panel">
-  <h2>${log.date}</h2>
-  <section><h3>今日やった東進</h3>${renderToshinBadges(log.toshinToday)}</section>
-  <section><h3>詳細</h3>${renderDetailsList(log.details)}</section>
+<section class="panel day-page">
+  <header class="day-page-head">
+    <p class="day-page-kicker">Daily Record</p>
+    <h2>${log.date}</h2>
+  </header>
+  <section class="day-page-section">
+    <h3>今日やった東進</h3>
+    ${renderToshinBadges(log.toshinToday)}
+  </section>
+  <section class="day-page-section">
+    <h3>今日やったこと</h3>
+    ${renderDetailsList(log.details)}
+  </section>
 </section>`
   });
 }

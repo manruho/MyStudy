@@ -444,6 +444,81 @@ main {
   border-left-color: var(--brand-primary);
 }
 
+/* Day Page */
+.day-page {
+  padding: 3rem;
+}
+
+.day-page-head {
+  margin-bottom: 2.75rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.day-page-kicker {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.day-page h2 {
+  margin: 0;
+  font-size: 2.2rem;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.day-page-section {
+  margin-bottom: 2.75rem;
+}
+
+.day-page-section:last-child {
+  margin-bottom: 0;
+}
+
+.day-page-section h3 {
+  margin: 0 0 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.day-page .subject-grid {
+  gap: 0.7rem;
+}
+
+.day-page .subject-chip {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.day-page .empty {
+  padding: 1rem 1.2rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+}
+
+.day-page ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.day-page li {
+  padding: 1.2rem 1.3rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  line-height: 1.75;
+}
+
 /* Calendar Month View */
 #month-select {
   padding: 0.75rem 3rem 0.75rem 1.25rem;
@@ -636,5 +711,22 @@ main {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
+  }
+
+  .day-page {
+    padding: 1.5rem;
+  }
+
+  .day-page-head {
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .day-page h2 {
+    font-size: 1.75rem;
+  }
+
+  .day-page-section {
+    margin-bottom: 1.75rem;
   }
 }
