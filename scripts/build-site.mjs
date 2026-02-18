@@ -284,14 +284,16 @@ function buildDayPage(log, todayYmd) {
     <p class="day-page-kicker">Daily Record</p>
     <h2>${log.date}</h2>
   </header>
-  <section class="day-page-section">
-    <h3>今日やった東進</h3>
-    ${renderToshinBadges(log.toshinToday)}
-  </section>
-  <section class="day-page-section">
-    <h3>今日やったこと</h3>
-    ${renderDetailsList(log.details)}
-  </section>
+  <div class="day-page-grid">
+    <section class="day-page-section">
+      <h3>今日やった東進</h3>
+      ${renderToshinBadges(log.toshinToday)}
+    </section>
+    <section class="day-page-section">
+      <h3>今日やったこと</h3>
+      ${renderDetailsList(log.details)}
+    </section>
+  </div>
 </section>`
   });
 }
