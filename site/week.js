@@ -134,13 +134,18 @@
     studyStreakEl.textContent = `${streakDays}日目`;
 
     if (!selectedDate || !dates.includes(selectedDate)) {
-      selectedDate = dates.includes(payload.today) ? payload.today : dates[0];
+      if (dates.includes(payload.today) && byDate.has(payload.today)) {
+        selectedDate = payload.today;
+      } else {
+        const latestLoggedDate = [...dates].reverse().find((date) => byDate.has(date));
+        selectedDate = latestLoggedDate || dates[0];
+      }
     }
 
     stripEl.innerHTML = dates.map((date) => renderCard(date, byDate.get(date), selectedDate === date)).join('');
 
     if (!hasInitialFocus) {
-      const focusDate = dates.includes(payload.today) ? payload.today : selectedDate;
+      const focusDate = selectedDate;
       const initialTrigger = stripEl.querySelector(`.day-card-trigger[data-date="${focusDate}"]`);
       if (initialTrigger) initialTrigger.focus({ preventScroll: true });
       hasInitialFocus = true;
