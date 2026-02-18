@@ -182,7 +182,6 @@ function renderLayout({ title, navToday, body, basePath }) {
     <h1>ぼくのおべんきょーしぇあさいと</h1>
     <nav>
       <a href="${basePath}index.html">Week</a>
-      <a href="${basePath}month.html">Month</a>
       ${todayLink}
     </nav>
   </header>
@@ -233,41 +232,6 @@ function buildWeekPage(logs, logMap, todayYmd) {
   });
 }
 
-function buildMonthPage(logs, logMap, todayYmd) {
-  const months = new Set();
-  for (const log of logs) months.add(log.date.slice(0, 7));
-  months.add(todayYmd.slice(0, 7));
-  const monthList = [...months].sort();
-
-  const payload = {
-    today: todayYmd,
-    months: monthList,
-    logs: logs.map((log) => ({
-      date: log.date,
-      hasToshin: log.toshinToday.length > 0,
-      hasDetail: log.details.length > 0
-    }))
-  };
-
-  const monthOptions = monthList.map((m) => `<option value="${m}">${m}</option>`).join('');
-
-  return renderLayout({
-    title: 'Month | ぼくのおべんきょーしぇあさいと',
-    navToday: logMap.has(todayYmd) ? todayYmd : null,
-    basePath: '',
-    body: `
-<section class="panel">
-  <h2>Month</h2>
-  <p class="caption">東進あり: ● / 詳細あり: ●（赤）</p>
-  <label for="month-select">月を選択:</label>
-  <select id="month-select">${monthOptions}</select>
-  <div id="calendar" class="calendar"></div>
-</section>
-<script id="month-data" type="application/json">${jsonForScript(payload)}</script>
-<script src="assets/month.js"></script>`
-  });
-}
-
 function renderDetailsList(details) {
   if (!details || details.length === 0) return '<p class="empty">詳細なし</p>';
   return `<ul>${details.map((item) => `<li>${nl2brSafe(item)}</li>`).join('')}</ul>`;
@@ -305,7 +269,6 @@ function ensureDir(dir) {
 function copyStaticAssets() {
   ensureDir(assetsDir);
   fs.copyFileSync(path.join(root, 'site', 'style.css'), path.join(assetsDir, 'style.css'));
-  fs.copyFileSync(path.join(root, 'site', 'month.js'), path.join(assetsDir, 'month.js'));
   fs.copyFileSync(path.join(root, 'site', 'week.js'), path.join(assetsDir, 'week.js'));
 }
 
@@ -320,7 +283,6 @@ function build() {
   copyStaticAssets();
 
   fs.writeFileSync(path.join(siteDir, 'index.html'), buildWeekPage(logs, logMap, todayYmd));
-  fs.writeFileSync(path.join(siteDir, 'month.html'), buildMonthPage(logs, logMap, todayYmd));
 
   for (const log of logs) {
     const outDir = path.join(siteDir, 'day', log.date);

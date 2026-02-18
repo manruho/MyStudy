@@ -17,7 +17,6 @@
 
 ## 公開ページ
 - `index.html` (Week)
-- `month.html` (Month)
 - `day/YYYY-MM-DD/` (Day)
 
 ## デプロイ
