@@ -153,9 +153,14 @@ function renderToshinBadges(items) {
   return `<div class="subject-grid">${items.map((name) => `<span class="subject-chip">${escapeHtml(name)}</span>`).join('')}</div>`;
 }
 
+function formatWday(ymd) {
+  const { y, m, d } = parseYmd(ymd);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return new Intl.DateTimeFormat('ja-JP', { weekday: 'short', timeZone: 'UTC' }).format(dt);
+}
+
 function renderDayCard(ymd, log) {
-  const dt = new Date(Date.UTC(...Object.values(parseYmd(ymd)).map((n, idx) => (idx === 1 ? n - 1 : n))));
-  const wday = new Intl.DateTimeFormat('ja-JP', { weekday: 'short', timeZone: 'UTC' }).format(dt);
+  const wday = formatWday(ymd);
 
   return `<article class="day-card" data-date="${ymd}">
     <button class="day-card-trigger" type="button" data-date="${ymd}" aria-controls="week-detail" aria-expanded="false">
@@ -238,6 +243,7 @@ function renderDetailsList(details) {
 }
 
 function buildDayPage(log, todayYmd) {
+  const wday = formatWday(log.date);
   return renderLayout({
     title: `${log.date} | ぼくのおべんきょーしぇあさいと`,
     navToday: todayYmd,
@@ -246,7 +252,7 @@ function buildDayPage(log, todayYmd) {
 <section class="panel day-page">
   <header class="day-page-head">
     <p class="day-page-kicker">Daily Record</p>
-    <h2>${log.date}</h2>
+    <h2>${log.date} (${wday})</h2>
   </header>
   <div class="day-page-grid">
     <section class="day-page-section">
